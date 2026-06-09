@@ -1,0 +1,19 @@
+statusline-command.sh
+  s_4a55ec6822f6f7::t_af6caf03b928f3 8,50,58,137-150,152,162-163,186-192,194,212-213,237,287-288
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "8f7419520fa83420b4268ffb68059c33644980fb",
+  "prompts": {},
+  "sessions": {
+    "s_4a55ec6822f6f7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2c853a8c-7cc9-49dd-840b-881f67db936a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mathieu <mathieukusno03@gmail.com>"
+    }
+  }
+}

@@ -5,6 +5,7 @@ input=$(cat)
 
 # --- Extract fields ---
 model=$(echo "$input" | jq -r '.model.display_name // "Unknown Model"')
+effort=$(echo "$input" | jq -r '.effort.level // empty')
 cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // ""')
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 cost=$(echo "$input" | jq -r '.cost.total_cost_usd // 0')
@@ -46,6 +47,7 @@ FG_BRIGHT_WHITE="\033[97m"
 FG_GRAY="\033[90m"
 FG_LIGHT_GRAY="\033[38;5;249m"
 FG_ORANGE="\033[38;5;208m"
+FG_MAGENTA="\033[38;5;201m"
 
 BG_GREEN="\033[42m"
 BG_YELLOW="\033[43m"
@@ -53,7 +55,7 @@ BG_RED="\033[41m"
 BG_DARK="\033[100m"
 
 # --- Progress bar ---
-BAR_WIDTH=10
+BAR_WIDTH=8
 
 if [ -n "$used_pct" ]; then
   pct_int=$(printf "%.0f" "$used_pct")
@@ -132,8 +134,22 @@ home="$HOME"
 display_cwd="${cwd/#$home/~}"
 cwd_label="${FG_BRIGHT_WHITE}${display_cwd}${RESET}${git_branch}"
 
+# --- Effort label (color-coded by intensity) ---
+effort_suffix=""
+if [ -n "$effort" ]; then
+  case "$effort" in
+    max)    EFFORT_COLOR="$FG_MAGENTA" ;;
+    xhigh)  EFFORT_COLOR="$FG_RED" ;;
+    high)   EFFORT_COLOR="$FG_ORANGE" ;;
+    medium) EFFORT_COLOR="$FG_YELLOW" ;;
+    low)    EFFORT_COLOR="$FG_GREEN" ;;
+    *)      EFFORT_COLOR="$FG_GRAY" ;;
+  esac
+  effort_suffix=" ${FG_GRAY}·${RESET} ${EFFORT_COLOR}${BOLD}⚡${effort}${RESET}"
+fi
+
 # --- Model label ---
-model_label="${FG_CYAN}${BOLD}${model}${RESET}"
+model_label="${FG_CYAN}${BOLD}${model}${RESET}${effort_suffix}"
 
 # --- Separator ---
 SEP="${FG_GRAY} | ${RESET}"
@@ -143,8 +159,8 @@ lines_added_label="${FG_GREEN}+${lines_added}${RESET}"
 lines_removed_label="${FG_RED}-${lines_removed}${RESET}"
 
 # --- Cumulative tokens ---
-input_tokens_label="${FG_YELLOW}input tokens:${RESET}${FG_YELLOW}${BOLD}$(fmt_tokens $total_input)${RESET}"
-output_tokens_label="${FG_ORANGE}output tokens:${RESET}${FG_ORANGE}${BOLD}$(fmt_tokens $total_output)${RESET}"
+input_tokens_label="${FG_YELLOW}ITkn:${RESET}${FG_YELLOW}${BOLD}$(fmt_tokens $total_input)${RESET}"
+output_tokens_label="${FG_ORANGE}OTkn:${RESET}${FG_ORANGE}${BOLD}$(fmt_tokens $total_output)${RESET}"
 
 # --- Format epoch to human-readable time remaining ---
 # Usage: fmt_reset <epoch> [use_days]
@@ -167,8 +183,15 @@ fmt_reset() {
   fi
 }
 
+# --- Format epoch to local clock time (e.g. 7:50pm, 3:25am) ---
+fmt_clock() {
+  local epoch=$1
+  if [ -z "$epoch" ]; then echo ""; return; fi
+  date -r "$epoch" +"%-I:%M%p" | tr 'A-Z' 'a-z'
+}
+
 # --- Rate limits (5h / 7d windows) ---
-RATE_BAR_WIDTH=10
+RATE_BAR_WIDTH=8
 rate_label=""
 if [ -n "$five_h_pct" ]; then
   fh_int=$(printf "%.0f" "$five_h_pct")
@@ -186,7 +209,8 @@ if [ -n "$five_h_pct" ]; then
   fh_bar_str="${FH_COLOR}${fh_bar}${RESET}${FG_GRAY}${fh_ebar}${RESET}"
   fh_reset_str=""
   if [ -n "$five_h_reset" ]; then
-    fh_reset_str="${FG_LIGHT_GRAY}($(fmt_reset "$five_h_reset"))${RESET}"
+    # Countdown + the actual clock time it resets (status line lags between prompts).
+    fh_reset_str="${FG_LIGHT_GRAY}($(fmt_reset "$five_h_reset") → $(fmt_clock "$five_h_reset"))${RESET}"
   fi
   rate_label="${fh_bar_str} ${FH_COLOR}5h:${fh_int}%${RESET}${fh_reset_str}"
 fi
@@ -209,13 +233,8 @@ fi
 
 # --- Session ID ---
 session_id=$(echo "$input" | jq -r '.session_id // ""')
-session_name=$(echo "$input" | jq -r '.session_name // ""')
 if [ -n "$session_id" ]; then
-  if [ -n "$session_name" ]; then
-    session_label="${FG_BRIGHT_WHITE}session:${RESET} ${FG_BRIGHT_WHITE}${session_id}${RESET}${FG_GRAY} (${session_name})${RESET}"
-  else
-    session_label="${FG_BRIGHT_WHITE}session:${RESET} ${FG_BRIGHT_WHITE}${session_id}${RESET}"
-  fi
+  session_label="${FG_BRIGHT_WHITE}session:${RESET} ${FG_BRIGHT_WHITE}${session_id}${RESET}"
 else
   session_label="${FG_GRAY}session: —${RESET}"
 fi
@@ -265,6 +284,6 @@ if [ -n "$transcript_path" ] && [ -f "$transcript_path" ]; then
 fi
 
 # --- Assemble ---
-echo -e "${model_label}${SEP}${progress_bar} ${pct_label} ${tokens_label}${rate_section}${SEP}${cost_label}"
-echo -e "${lines_added_label} ${lines_removed_label}${SEP}${input_tokens_label} ${output_tokens_label}${SEP}${version_label}${SEP}${cwd_label}"
+echo -e "${model_label}${SEP}${progress_bar} ${pct_label} ${tokens_label}${rate_section}"
+echo -e "${version_label}${SEP}${cost_label}${SEP}${lines_added_label} ${lines_removed_label}${SEP}${input_tokens_label} ${output_tokens_label}${SEP}${cwd_label}"
 echo -e "${session_label}${session_start_label}"

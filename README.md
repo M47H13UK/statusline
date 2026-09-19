@@ -1,13 +1,13 @@
-# Claude Code Status Line + Multi-Account Aliases
+# Claude Code status line and multi-account aliases
 
-Two tools for [Claude Code](https://claude.ai/claude-code) power users:
+Two tools for [Claude Code](https://claude.ai/claude-code):
 
-1. **Status line** — richer info bar (model, context bar, rate limits, cost, tokens, git branch)
-2. **Multi-account aliases** — `claude1`, `claude2`, … isolated instances to cycle between Max subscriptions and distribute rate limits
+1. **Status line.** Info bar (model, context bar, rate limits, cost, tokens, git branch)
+2. **Multi-account aliases.** `claude1`, `claude2`, … isolated instances to cycle between Max subscriptions and distribute rate limits
 
 ---
 
-## Status Line
+## Status line
 
 ![Status line example](status_line_example_image.png)
 
@@ -24,7 +24,7 @@ Requires `jq` (`brew install jq` / `sudo apt install jq`).
 
 ---
 
-## Multi-Account Aliases
+## Multi-account aliases
 
 Run isolated Claude Code instances, each with its own auth, sharing settings/skills/plugins via symlinks. The default `claude` command stays untouched.
 
